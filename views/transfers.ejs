@@ -1,0 +1,97 @@
+<!-- Transfers Page -->
+<div class="flex justify-between items-center mb-6">
+  <div><h3 class="text-lg font-semibold">Internal Transfers</h3><p class="text-sm text-txt/50">Move stock between locations</p></div>
+  <button onclick="openModal('transferModal')" class="btn btn-primary"><i data-lucide="plus" class="w-4 h-4"></i> New Transfer</button>
+</div>
+
+<div class="card">
+  <div class="overflow-x-auto">
+    <table class="data-table">
+      <thead><tr><th>Reference</th><th>From</th><th>To</th><th>Qty</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
+      <tbody>
+        <% if (transfers.length === 0) { %><tr><td colspan="7" class="text-center py-8 text-txt/40">No transfers yet</td></tr><% } %>
+        <% transfers.forEach(function(t) { %>
+        <tr>
+          <td class="font-mono font-medium text-sm"><%= t.reference %></td>
+          <td class="text-sm"><%= t.from_wh %> / <%= t.from_loc %></td>
+          <td class="text-sm"><%= t.to_wh %> / <%= t.to_loc %></td>
+          <td class="font-semibold"><%= parseFloat(t.total_qty) %></td>
+          <td><span class="badge badge-<%= t.status === 'validated' ? 'validated' : 'draft' %>"><%= t.status %></span></td>
+          <td class="text-sm text-txt/50"><%= new Date(t.created_at).toLocaleDateString() %></td>
+          <td>
+            <% if (t.status === 'draft') { %>
+            <button onclick="validateTransfer(<%= t.id %>)" class="btn btn-success btn-sm"><i data-lucide="check" class="w-3 h-3"></i> Validate</button>
+            <% } else { %><span class="text-xs text-txt/40">Done</span><% } %>
+          </td>
+        </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div id="transferModal" class="modal-overlay hidden">
+  <div class="modal-content">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="text-lg font-bold">New Transfer</h3>
+      <button onclick="closeModal('transferModal')" class="p-1 hover:bg-surface rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <form id="transferForm" class="space-y-4">
+      <div class="grid grid-cols-2 gap-4">
+        <div><label class="block text-xs font-medium mb-1">From Location *</label>
+          <select id="tFrom" class="form-input" required>
+            <% locations.forEach(function(l) { %><option value="<%= l.id %>"><%= l.warehouse_name %> / <%= l.name %></option><% }); %>
+          </select></div>
+        <div><label class="block text-xs font-medium mb-1">To Location *</label>
+          <select id="tTo" class="form-input" required>
+            <% locations.forEach(function(l) { %><option value="<%= l.id %>"><%= l.warehouse_name %> / <%= l.name %></option><% }); %>
+          </select></div>
+      </div>
+      <div>
+        <label class="block text-xs font-medium mb-2">Products</label>
+        <div id="transferLines" class="space-y-2"></div>
+        <button type="button" onclick="addTransferLine()" class="btn btn-secondary btn-sm mt-2"><i data-lucide="plus" class="w-3 h-3"></i> Add Line</button>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" onclick="closeModal('transferModal')" class="btn btn-secondary">Cancel</button>
+        <button type="submit" class="btn btn-primary">Create Transfer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+const prods = <%- JSON.stringify(products) %>;
+function addTransferLine() {
+  const div = document.createElement('div');
+  div.className = 'flex gap-2 items-center';
+  div.innerHTML = `<select class="form-input flex-1 tl-product" required>${prods.map(p => `<option value="${p.id}">${p.name} (${p.sku})</option>`).join('')}</select>
+    <input type="number" class="form-input w-24 tl-qty" placeholder="Qty" min="1" value="1" required>
+    <button type="button" onclick="this.parentElement.remove()" class="btn btn-danger btn-sm"><i data-lucide="x" class="w-3 h-3"></i></button>`;
+  document.getElementById('transferLines').appendChild(div);
+  lucide.createIcons();
+}
+addTransferLine();
+
+document.getElementById('transferForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const lines = [...document.querySelectorAll('#transferLines > div')].map(d => ({
+    product_id: parseInt(d.querySelector('.tl-product').value),
+    quantity: parseFloat(d.querySelector('.tl-qty').value)
+  }));
+  try {
+    await apiFetch('/transfers/api', { method: 'POST', body: JSON.stringify({
+      from_location_id: parseInt(document.getElementById('tFrom').value),
+      to_location_id: parseInt(document.getElementById('tTo').value), lines
+    })});
+    showToast('Transfer created!');
+    setTimeout(() => location.reload(), 500);
+  } catch(e) {}
+});
+
+async function validateTransfer(id) {
+  if (!confirm('Validate this transfer?')) return;
+  try { await apiFetch('/transfers/api/' + id + '/validate', { method: 'POST' }); showToast('Transfer validated!'); setTimeout(() => location.reload(), 500); } catch(e) {}
+}
+lucide.createIcons();
+</script>

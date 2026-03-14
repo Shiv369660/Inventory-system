@@ -1,0 +1,92 @@
+<!-- Warehouses Page -->
+<div class="flex justify-between items-center mb-6">
+  <div><h3 class="text-lg font-semibold">Warehouse Settings</h3><p class="text-sm text-txt/50">Manage warehouses and storage locations</p></div>
+  <button onclick="openModal('whModal')" class="btn btn-primary"><i data-lucide="plus" class="w-4 h-4"></i> Add Warehouse</button>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <% warehouses.forEach(function(w) { var wLocs = locations.filter(function(l) { return l.warehouse_name === w.name; }); %>
+  <div class="card">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <h4 class="font-bold text-lg flex items-center gap-2"><i data-lucide="warehouse" class="w-5 h-5 text-primary"></i> <%= w.name %></h4>
+        <p class="text-sm text-txt/50"><%= w.address || 'No address' %></p>
+      </div>
+      <div class="flex gap-2">
+        <span class="badge badge-info"><%= w.location_count %> locations</span>
+        <span class="badge badge-success"><%= w.product_count %> products</span>
+      </div>
+    </div>
+    <div class="space-y-2">
+      <% wLocs.forEach(function(l) { %>
+      <div class="flex items-center justify-between p-3 bg-surface rounded-lg">
+        <div class="flex items-center gap-2">
+          <i data-lucide="map-pin" class="w-4 h-4 text-primary/60"></i>
+          <span class="text-sm font-medium"><%= l.name %></span>
+          <span class="badge badge-info text-[10px]"><%= l.type %></span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-txt/40"><%= l.product_count %> products</span>
+          <button onclick="deleteLocation(<%= l.id %>)" class="p-1 hover:bg-danger/10 rounded text-danger/50 hover:text-danger"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
+        </div>
+      </div>
+      <% }); %>
+      <button onclick="addLocationTo(<%= w.id %>, '<%= w.name %>')" class="btn btn-secondary btn-sm w-full justify-center mt-2"><i data-lucide="plus" class="w-3 h-3"></i> Add Location</button>
+    </div>
+  </div>
+  <% }); %>
+</div>
+
+<!-- Add Warehouse Modal -->
+<div id="whModal" class="modal-overlay hidden">
+  <div class="modal-content">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="text-lg font-bold">Add Warehouse</h3>
+      <button onclick="closeModal('whModal')" class="p-1 hover:bg-surface rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <form id="whForm" class="space-y-4">
+      <div><label class="block text-xs font-medium mb-1">Name *</label><input type="text" id="whName" class="form-input" required></div>
+      <div><label class="block text-xs font-medium mb-1">Address</label><input type="text" id="whAddress" class="form-input"></div>
+      <div class="flex justify-end gap-2"><button type="button" onclick="closeModal('whModal')" class="btn btn-secondary">Cancel</button><button type="submit" class="btn btn-primary">Create</button></div>
+    </form>
+  </div>
+</div>
+
+<!-- Add Location Modal -->
+<div id="locModal" class="modal-overlay hidden">
+  <div class="modal-content">
+    <div class="flex items-center justify-between mb-6">
+      <h3 id="locTitle" class="text-lg font-bold">Add Location</h3>
+      <button onclick="closeModal('locModal')" class="p-1 hover:bg-surface rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <form id="locForm" class="space-y-4">
+      <input type="hidden" id="locWhId">
+      <div><label class="block text-xs font-medium mb-1">Location Name *</label><input type="text" id="locName" class="form-input" required placeholder="e.g., Rack A3"></div>
+      <div><label class="block text-xs font-medium mb-1">Type</label>
+        <select id="locType" class="form-input"><option value="rack">Rack</option><option value="shelf">Shelf</option><option value="cold">Cold Storage</option><option value="floor">Floor Area</option></select>
+      </div>
+      <div class="flex justify-end gap-2"><button type="button" onclick="closeModal('locModal')" class="btn btn-secondary">Cancel</button><button type="submit" class="btn btn-primary">Create</button></div>
+    </form>
+  </div>
+</div>
+
+<script>
+document.getElementById('whForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  try { await apiFetch('/warehouses/api', { method: 'POST', body: JSON.stringify({ name: document.getElementById('whName').value, address: document.getElementById('whAddress').value })}); showToast('Warehouse created!'); setTimeout(() => location.reload(), 500); } catch(e) {}
+});
+function addLocationTo(id, name) {
+  document.getElementById('locWhId').value = id;
+  document.getElementById('locTitle').textContent = 'Add Location to ' + name;
+  openModal('locModal');
+}
+document.getElementById('locForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  try { await apiFetch('/warehouses/api/locations', { method: 'POST', body: JSON.stringify({ warehouse_id: parseInt(document.getElementById('locWhId').value), name: document.getElementById('locName').value, type: document.getElementById('locType').value })}); showToast('Location created!'); setTimeout(() => location.reload(), 500); } catch(e) {}
+});
+async function deleteLocation(id) {
+  if (!confirm('Delete this location?')) return;
+  try { await apiFetch('/warehouses/api/locations/' + id, { method: 'DELETE' }); showToast('Location deleted'); setTimeout(() => location.reload(), 500); } catch(e) {}
+}
+lucide.createIcons();
+</script>

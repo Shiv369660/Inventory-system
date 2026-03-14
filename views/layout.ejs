@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>
+    <%= title %> – CoreInventory
+  </title>
+  <meta name="description" content="CoreInventory – Smart Inventory Management System">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: { DEFAULT: '#714B67', light: '#875A7B', dark: '#5A3A52' },
+            secondary: '#875A7B',
+            surface: '#F6F6F6',
+            card: '#FFFFFF',
+            border: '#E5E5E5',
+            txt: '#2C2C2C',
+            success: '#28A745',
+            warning: '#F0AD4E',
+            danger: '#DC3545',
+          }
+        }
+      }
+    }
+  </script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    #pageLoader {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: #F6F6F6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 99999;
+      transition: opacity 0.5s ease;
+    }
+
+    #pageLoader.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .loader-anim {
+      width: fit-content;
+      height: fit-content;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .truckWrapper {
+      width: 200px;
+      height: 100px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      align-items: center;
+      justify-content: flex-end;
+      overflow-x: hidden;
+    }
+
+    .truckBody {
+      width: 130px;
+      height: fit-content;
+      margin-bottom: 6px;
+      animation: motion 1s linear infinite;
+    }
+
+    @keyframes motion {
+      0% {
+        transform: translateY(0px);
+      }
+
+      50% {
+        transform: translateY(3px);
+      }
+
+      100% {
+        transform: translateY(0px);
+      }
+    }
+
+    .truckTires {
+      width: 130px;
+      height: fit-content;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0px 10px 0px 15px;
+      position: absolute;
+      bottom: 0;
+    }
+
+    .truckTires svg {
+      width: 24px;
+    }
+
+    .road {
+      width: 100%;
+      height: 1.5px;
+      background-color: #282828;
+      position: relative;
+      bottom: 0;
+      align-self: flex-end;
+      border-radius: 3px;
+    }
+
+    .road::before {
+      content: "";
+      position: absolute;
+      width: 20px;
+      height: 100%;
+      background-color: #282828;
+      right: -50%;
+      border-radius: 3px;
+      animation: roadAnimation 1.4s linear infinite;
+      border-left: 10px solid white;
+    }
+
+    .road::after {
+      content: "";
+      position: absolute;
+      width: 10px;
+      height: 100%;
+      background-color: #282828;
+      right: -65%;
+      border-radius: 3px;
+      animation: roadAnimation 1.4s linear infinite;
+      border-left: 4px solid white;
+    }
+
+    .lampPost {
+      position: absolute;
+      bottom: 0;
+      right: -90%;
+      height: 90px;
+      animation: roadAnimation 1.4s linear infinite;
+    }
+
+    @keyframes roadAnimation {
+      0% {
+        transform: translateX(0px);
+      }
+
+      100% {
+        transform: translateX(-350px);
+      }
+    }
+  </style>
+</head>
+
+<body class="bg-surface font-['Inter'] text-txt min-h-screen">
+  <!-- Page Loader -->
+  <div id="pageLoader">
+    <div class="loader-anim">
+      <div class="truckWrapper">
+        <div class="truckBody">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 198 93" class="trucksvg">
+            <path stroke-width="3" stroke="#282828" fill="#F83D3D"
+              d="M135 22.5H177.264C178.295 22.5 179.22 23.133 179.594 24.0939L192.33 56.8443C192.442 57.1332 192.5 57.4404 192.5 57.7504V89C192.5 90.3807 191.381 91.5 190 91.5H135C133.619 91.5 132.5 90.3807 132.5 89V25C132.5 23.6193 133.619 22.5 135 22.5Z" />
+            <path stroke-width="3" stroke="#282828" fill="#7D7C7C"
+              d="M146 33.5H181.741C182.779 33.5 183.709 34.1415 184.078 35.112L190.538 52.112C191.16 53.748 189.951 55.5 188.201 55.5H146C144.619 55.5 143.5 54.3807 143.5 53V36C143.5 34.6193 144.619 33.5 146 33.5Z" />
+            <path stroke-width="2" stroke="#282828" fill="#282828"
+              d="M150 65C150 65.39 149.763 65.8656 149.127 66.2893C148.499 66.7083 147.573 67 146.5 67C145.427 67 144.501 66.7083 143.873 66.2893C143.237 65.8656 143 65.39 143 65C143 64.61 143.237 64.1344 143.873 63.7107C144.501 63.2917 145.427 63 146.5 63C147.573 63 148.499 63.2917 149.127 63.7107C149.763 64.1344 150 64.61 150 65Z" />
+            <rect stroke-width="2" stroke="#282828" fill="#FFFCAB" rx="1" height="7" width="5" y="63" x="187" />
+            <rect stroke-width="2" stroke="#282828" fill="#282828" rx="1" height="11" width="4" y="81" x="193" />
+            <rect stroke-width="3" stroke="#282828" fill="#DFDFDF" rx="2.5" height="90" width="121" y="1.5" x="6.5" />
+            <rect stroke-width="2" stroke="#282828" fill="#DFDFDF" rx="2" height="4" width="6" y="84" x="1" />
+          </svg>
+        </div>
+        <div class="truckTires">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 30 30" class="tiresvg">
+            <circle stroke-width="3" stroke="#282828" fill="#282828" r="13.5" cy="15" cx="15" />
+            <circle fill="#DFDFDF" r="7" cy="15" cx="15" />
+          </svg>
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 30 30" class="tiresvg">
+            <circle stroke-width="3" stroke="#282828" fill="#282828" r="13.5" cy="15" cx="15" />
+            <circle fill="#DFDFDF" r="7" cy="15" cx="15" />
+          </svg>
+        </div>
+        <div class="road"></div>
+        <svg xml:space="preserve" viewBox="0 0 453.459 453.459" xmlns:xlink="http://www.w3.org/1999/xlink"
+          xmlns="http://www.w3.org/2000/svg" id="Capa_1" version="1.1" fill="#000000" class="lampPost">
+          <path d="M252.882,0c-37.781,0-68.686,29.953-70.245,67.358h-6.917v8.954c-26.109,2.163-45.463,10.011-45.463,19.366h9.993
+    c-1.65,5.146-2.507,10.54-2.507,16.017c0,28.956,23.558,52.514,52.514,52.514c28.956,0,52.514-23.558,52.514-52.514
+    c0-5.478-0.856-10.872-2.506-16.017h9.992c0-9.354-19.352-17.204-45.463-19.366v-8.954h-6.149C200.189,38.779,223.924,16,252.882,16
+    c29.952,0,54.32,24.368,54.32,54.32c0,28.774-11.078,37.009-25.105,47.437c-17.444,12.968-37.216,27.667-37.216,78.884v113.914
+    h-0.797c-5.068,0-9.174,4.108-9.174,9.177c0,2.844,1.293,5.383,3.321,7.066c-3.432,27.933-26.851,95.744-8.226,115.459v11.202h45.75
+    v-11.202c18.625-19.715-4.794-87.527-8.227-115.459c2.029-1.683,3.322-4.223,3.322-7.066c0-5.068-4.107-9.177-9.176-9.177h-0.795
+    V196.641c0-43.174,14.942-54.283,30.762-66.043c14.793-10.997,31.559-23.461,31.559-60.277C323.202,31.545,291.656,0,252.882,0z
+    M232.77,111.694c0,23.442-19.071,42.514-42.514,42.514c-23.442,0-42.514-19.072-42.514-42.514c0-5.531,1.078-10.957,3.141-16.017
+    h78.747C231.693,100.736,232.77,106.162,232.77,111.694z" />
+        </svg>
+      </div>
+    </div>
+  </div>
+  <% if (user) { %>
+    <!-- Sidebar -->
+    <aside id="sidebar"
+      class="fixed left-0 top-0 h-full w-64 bg-primary text-white z-50 transform transition-transform duration-300 lg:translate-x-0 -translate-x-full">
+      <div class="p-5 border-b border-white/10">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-sm">
+            <i data-lucide="box" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h1 class="font-bold text-lg leading-tight">CoreInventory</h1>
+            <p class="text-xs text-white/60">Smart Management</p>
+          </div>
+        </div>
+      </div>
+      <nav class="p-3 space-y-1 overflow-y-auto h-[calc(100%-160px)]">
+        <a href="/dashboard" class="nav-link <%= currentPath === '/dashboard' ? 'active' : '' %>">
+          <i data-lucide="layout-dashboard" class="w-5 h-5"></i><span>Dashboard</span>
+        </a>
+        <a href="/products" class="nav-link <%= currentPath === '/products' ? 'active' : '' %>">
+          <i data-lucide="package" class="w-5 h-5"></i><span>Products</span>
+        </a>
+        <a href="/receipts" class="nav-link <%= currentPath === '/receipts' ? 'active' : '' %>">
+          <i data-lucide="download" class="w-5 h-5"></i><span>Receipts</span>
+        </a>
+        <a href="/deliveries" class="nav-link <%= currentPath === '/deliveries' ? 'active' : '' %>">
+          <i data-lucide="upload" class="w-5 h-5"></i><span>Deliveries</span>
+        </a>
+        <a href="/transfers" class="nav-link <%= currentPath === '/transfers' ? 'active' : '' %>">
+          <i data-lucide="repeat" class="w-5 h-5"></i><span>Transfers</span>
+        </a>
+        <a href="/adjustments" class="nav-link <%= currentPath === '/adjustments' ? 'active' : '' %>">
+          <i data-lucide="sliders" class="w-5 h-5"></i><span>Adjustments</span>
+        </a>
+        <a href="/movements" class="nav-link <%= currentPath === '/movements' ? 'active' : '' %>">
+          <i data-lucide="history" class="w-5 h-5"></i><span>Move History</span>
+        </a>
+        <div class="border-t border-white/10 my-3"></div>
+        <a href="/warehouses" class="nav-link <%= currentPath === '/warehouses' ? 'active' : '' %>">
+          <i data-lucide="warehouse" class="w-5 h-5"></i><span>Warehouses</span>
+        </a>
+        <a href="/profile" class="nav-link <%= currentPath === '/profile' ? 'active' : '' %>">
+          <i data-lucide="user" class="w-5 h-5"></i><span>Profile</span>
+        </a>
+      </nav>
+      <div class="absolute bottom-0 w-full p-3 border-t border-white/10">
+        <a href="/logout" class="nav-link text-white/70 hover:text-white">
+          <i data-lucide="log-out" class="w-5 h-5"></i><span>Logout</span>
+        </a>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="lg:ml-64 min-h-screen">
+      <!-- Top Bar -->
+      <header class="sticky top-0 bg-white/80 backdrop-blur-md border-b border-border z-40">
+        <div class="flex items-center justify-between px-6 py-3">
+          <div class="flex items-center gap-3">
+            <button onclick="toggleSidebar()" class="lg:hidden p-2 hover:bg-surface rounded-lg transition-colors">
+              <i data-lucide="menu" class="w-5 h-5"></i>
+            </button>
+            <h2 class="text-lg font-semibold text-txt">
+              <%= title %>
+            </h2>
+          </div>
+          <div class="flex items-center gap-4">
+            <div class="hidden sm:flex items-center gap-2 text-sm text-txt/60">
+              <i data-lucide="clock" class="w-4 h-4"></i>
+              <span id="live-clock"></span>
+            </div>
+            <div class="flex items-center gap-2 pl-4 border-l border-border">
+              <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <span class="text-sm font-semibold text-primary">
+                  <%= user.name.charAt(0).toUpperCase() %>
+                </span>
+              </div>
+              <span class="text-sm font-medium hidden sm:inline">
+                <%= user.name %>
+              </span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <main class="p-6">
+        <%- body %>
+      </main>
+    </div>
+
+    <!-- Overlay for mobile sidebar -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-40 hidden lg:hidden" onclick="toggleSidebar()"></div>
+    <% } else { %>
+      <%- body %>
+        <% } %>
+
+          <!-- Toast container -->
+          <div id="toast-container" class="fixed top-4 right-4 z-[9999] space-y-2"></div>
+
+          <script>
+            lucide.createIcons();
+            function toggleSidebar() {
+              const sidebar = document.getElementById('sidebar');
+              const overlay = document.getElementById('sidebar-overlay');
+              sidebar.classList.toggle('-translate-x-full');
+              overlay.classList.toggle('hidden');
+            }
+            // Live clock
+            function updateClock() {
+              const el = document.getElementById('live-clock');
+              if (el) el.textContent = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+            }
+            updateClock(); setInterval(updateClock, 30000);
+
+            // Toast notification
+            function showToast(message, type = 'success') {
+              const colors = { success: 'bg-success', error: 'bg-danger', warning: 'bg-warning', info: 'bg-primary' };
+              const toast = document.createElement('div');
+              toast.className = `${colors[type] || colors.info} text-white px-5 py-3 rounded-xl shadow-lg text-sm font-medium animate-slideIn`;
+              toast.textContent = message;
+              document.getElementById('toast-container').appendChild(toast);
+              setTimeout(() => { toast.classList.add('animate-slideOut'); setTimeout(() => toast.remove(), 300); }, 3000);
+            }
+
+            // Fetch wrapper
+            async function apiFetch(url, options = {}) {
+              try {
+                const res = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...options });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Request failed');
+                return data;
+              } catch (err) { showToast(err.message, 'error'); throw err; }
+            }
+          </script>
+          <script src="/js/app.js"></script>
+          <script>
+            // Hide loader after a short delay
+            window.addEventListener('load', () => {
+              setTimeout(() => {
+                const loader = document.getElementById('pageLoader');
+                if (loader) loader.classList.add('hidden');
+              }, 800);
+            });
+          </script>
+</body>
+
+</html>

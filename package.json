@@ -1,0 +1,27 @@
+{
+  "name": "coreinventory",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "inventory",
+    "management",
+    "warehouse"
+  ],
+  "author": "CoreInventory Team",
+  "license": "ISC",
+  "description": "Smart Inventory Management Web Application",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^12.8.0",
+    "dotenv": "^17.3.1",
+    "ejs": "^5.0.1",
+    "express": "^5.2.1",
+    "express-ejs-layouts": "^2.5.1",
+    "express-session": "^1.19.0",
+    "pg": "^8.20.0"
+  }
+}

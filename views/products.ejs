@@ -1,0 +1,258 @@
+<!-- Products Page -->
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+  <div>
+    <h3 class="text-lg font-semibold">Product Catalog</h3>
+    <p class="text-sm text-txt/50">Manage your inventory products</p>
+  </div>
+  <button onclick="openModal('productModal'); resetForm()" class="btn btn-primary"><i data-lucide="plus"
+      class="w-4 h-4"></i> Add Product</button>
+</div>
+
+<!-- Filters -->
+<div class="card mb-6">
+  <form id="searchForm" class="flex flex-wrap gap-3 items-end" onsubmit="return false;">
+    <div class="flex-1 min-w-[200px]">
+      <label class="block text-xs font-medium mb-1">Search</label>
+      <input type="text" id="searchInput" value="<%= search %>" class="form-input"
+        placeholder="Search by name or SKU...">
+    </div>
+    <div class="w-48">
+      <label class="block text-xs font-medium mb-1">Category</label>
+      <select id="categorySelect" class="form-input">
+        <option value="">All Categories</option>
+        <% categories.forEach(function(c) { %>
+          <option value="<%= c.category %>" <%=category===c.category?'selected':'' %>><%= c.category %>
+          </option>
+          <% }); %>
+      </select>
+    </div>
+    <button type="button" onclick="filterProducts()" class="btn btn-secondary"><i data-lucide="search"
+        class="w-4 h-4"></i> Filter</button>
+    <button type="button" onclick="clearFilters()" class="btn btn-secondary"><i data-lucide="x" class="w-4 h-4"></i>
+      Clear</button>
+  </form>
+</div>
+
+<!-- Products Table -->
+<div class="card">
+  <div class="overflow-x-auto">
+    <table class="data-table" id="productsTable">
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>SKU</th>
+          <th>Category</th>
+          <th>Stock</th>
+          <th>Unit</th>
+          <th>Location</th>
+          <th>Daily Usage</th>
+          <th>Days Left</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (products.length===0) { %>
+          <tr>
+            <td colspan="9" class="text-center py-8 text-txt/40">No products found</td>
+          </tr>
+          <% } products.forEach(function(p) { var daysLeft=p.daily_usage> 0 ? Math.round(p.current_stock /
+            p.daily_usage) : null;
+            var color = daysLeft === null ? 'info' : daysLeft > 20 ? 'success' : daysLeft > 10 ? 'warning' : 'danger';
+            %>
+            <tr>
+              <td class="font-medium">
+                <%= p.name %>
+              </td>
+              <td class="font-mono text-xs text-txt/50">
+                <%= p.sku %>
+              </td>
+              <td><span class="badge badge-info">
+                  <%= p.category || '—' %>
+                </span></td>
+              <td class="font-semibold">
+                <%= parseFloat(p.current_stock) %>
+              </td>
+              <td class="text-sm">
+                <%= p.unit %>
+              </td>
+              <td class="text-sm">
+                <%= p.warehouse_name ? p.warehouse_name + ' / ' + p.location_name : '—' %>
+              </td>
+              <td>
+                <%= parseFloat(p.daily_usage) %>/day
+              </td>
+              <td><span class="badge badge-<%= color %>">
+                  <%= daysLeft !==null ? daysLeft + 'd' : '∞' %>
+                </span></td>
+              <td>
+                <div class="flex gap-1">
+                  <button onclick='editProduct(<%- JSON.stringify(p) %>)' class="btn btn-secondary btn-sm"
+                    title="Edit"><i data-lucide="pencil" class="w-3 h-3"></i></button>
+                  <button onclick="deleteProduct(<%= p.id %>)" class="btn btn-danger btn-sm" title="Delete"><i
+                      data-lucide="trash-2" class="w-3 h-3"></i></button>
+                </div>
+              </td>
+            </tr>
+            <% }); %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Product Modal -->
+<div id="productModal" class="modal-overlay hidden">
+  <div class="modal-content">
+    <div class="flex items-center justify-between mb-6">
+      <h3 id="modalTitle" class="text-lg font-bold">Add Product</h3>
+      <button onclick="closeModal('productModal')" class="p-1 hover:bg-surface rounded-lg"><i data-lucide="x"
+          class="w-5 h-5"></i></button>
+    </div>
+    <form id="productForm" class="space-y-4">
+      <input type="hidden" id="productId">
+      <div class="grid grid-cols-2 gap-4">
+        <div><label class="block text-xs font-medium mb-1">Product Name *</label><input type="text" id="pName"
+            class="form-input" required></div>
+        <div><label class="block text-xs font-medium mb-1">SKU *</label><input type="text" id="pSku" class="form-input"
+            required></div>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div><label class="block text-xs font-medium mb-1">Category</label><input type="text" id="pCategory"
+            class="form-input"></div>
+        <div><label class="block text-xs font-medium mb-1">Unit</label><input type="text" id="pUnit" class="form-input"
+            value="units"></div>
+      </div>
+      <div class="grid grid-cols-3 gap-4">
+        <div><label class="block text-xs font-medium mb-1">Current Stock</label><input type="number" id="pStock"
+            class="form-input" value="0" min="0"></div>
+        <div><label class="block text-xs font-medium mb-1">Daily Usage</label><input type="number" id="pUsage"
+            class="form-input" value="0" step="0.1" min="0"></div>
+        <div>
+          <label class="block text-xs font-medium mb-1">Location</label>
+          <select id="pLocation" class="form-input">
+            <option value="">— Select —</option>
+            <% locations.forEach(function(l) { %>
+              <option value="<%= l.id %>">
+                <%= l.warehouse_name %> / <%= l.name %>
+              </option>
+              <% }); %>
+          </select>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" onclick="closeModal('productModal')" class="btn btn-secondary">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Product</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  const allProducts = <% - JSON.stringify(products) %>;
+  const allLocations = <% - JSON.stringify(locations) %>;
+
+  function filterProducts() {
+    const searchValue = document.getElementById('searchInput').value.toLowerCase().trim();
+    const categoryValue = document.getElementById('categorySelect').value;
+    const tbody = document.querySelector('#productsTable tbody');
+
+    const filtered = allProducts.filter(p => {
+      const matchesSearch = !searchValue ||
+        p.name.toLowerCase().includes(searchValue) ||
+        p.sku.toLowerCase().includes(searchValue) ||
+        (p.category && p.category.toLowerCase().includes(searchValue));
+      const matchesCategory = !categoryValue || p.category === categoryValue;
+      return matchesSearch && matchesCategory;
+    });
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="9" class="text-center py-8 text-txt/40">No products found</td></tr>';
+    } else {
+      tbody.innerHTML = filtered.map(p => {
+        const daysLeft = p.daily_usage > 0 ? Math.round(p.current_stock / p.daily_usage) : null;
+        const color = daysLeft === null ? 'info' : daysLeft > 20 ? 'success' : daysLeft > 10 ? 'warning' : 'danger';
+        const location = allLocations.find(l => l.id === p.location_id);
+        const locationText = location ? location.warehouse_name + ' / ' + location.name : '—';
+        return `<tr>
+        <td class="font-medium">${escapeHtml(p.name)}</td>
+        <td class="font-mono text-xs text-txt/50">${escapeHtml(p.sku)}</td>
+        <td><span class="badge badge-info">${p.category || '—'}</span></td>
+        <td class="font-semibold">${parseFloat(p.current_stock)}</td>
+        <td class="text-sm">${p.unit}</td>
+        <td class="text-sm">${locationText}</td>
+        <td>${parseFloat(p.daily_usage)}/day</td>
+        <td><span class="badge badge-${color}">${daysLeft !== null ? daysLeft + 'd' : '∞'}</span></td>
+        <td>
+          <div class="flex gap-1">
+            <button onclick='editProduct(${JSON.stringify(p).replace(/'/g, "&#39;")})' class="btn btn-secondary btn-sm" title="Edit"><i data-lucide="pencil" class="w-3 h-3"></i></button>
+            <button onclick="deleteProduct(${p.id})" class="btn btn-danger btn-sm" title="Delete"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
+          </div>
+        </td>
+      </tr>`;
+      }).join('');
+    }
+    lucide.createIcons();
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function clearFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('categorySelect').value = '';
+    filterProducts();
+  }
+
+  document.getElementById('searchInput').addEventListener('input', filterProducts);
+  document.getElementById('categorySelect').addEventListener('change', filterProducts);
+
+  function resetForm() {
+    document.getElementById('productId').value = '';
+    document.getElementById('pName').value = '';
+    document.getElementById('pSku').value = '';
+    document.getElementById('pCategory').value = '';
+    document.getElementById('pUnit').value = 'units';
+    document.getElementById('pStock').value = '0';
+    document.getElementById('pUsage').value = '0';
+    document.getElementById('pLocation').value = '';
+    document.getElementById('modalTitle').textContent = 'Add Product';
+  }
+  function editProduct(p) {
+    document.getElementById('productId').value = p.id;
+    document.getElementById('pName').value = p.name;
+    document.getElementById('pSku').value = p.sku;
+    document.getElementById('pCategory').value = p.category || '';
+    document.getElementById('pUnit').value = p.unit;
+    document.getElementById('pStock').value = p.current_stock;
+    document.getElementById('pUsage').value = p.daily_usage;
+    document.getElementById('pLocation').value = p.location_id || '';
+    document.getElementById('modalTitle').textContent = 'Edit Product';
+    openModal('productModal');
+  }
+  document.getElementById('productForm').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const id = document.getElementById('productId').value;
+    const data = {
+      name: document.getElementById('pName').value,
+      sku: document.getElementById('pSku').value,
+      category: document.getElementById('pCategory').value,
+      unit: document.getElementById('pUnit').value,
+      current_stock: parseFloat(document.getElementById('pStock').value),
+      location_id: document.getElementById('pLocation').value || null,
+      daily_usage: parseFloat(document.getElementById('pUsage').value)
+    };
+    try {
+      if (id) { await apiFetch('/products/api/' + id, { method: 'PUT', body: JSON.stringify(data) }); }
+      else { await apiFetch('/products/api', { method: 'POST', body: JSON.stringify(data) }); }
+      showToast(id ? 'Product updated!' : 'Product created!');
+      setTimeout(() => location.reload(), 500);
+    } catch (e) { }
+  });
+  async function deleteProduct(id) {
+    if (!confirm('Delete this product?')) return;
+    try { await apiFetch('/products/api/' + id, { method: 'DELETE' }); showToast('Product deleted'); setTimeout(() => location.reload(), 500); } catch (e) { }
+  }
+  lucide.createIcons();
+</script>

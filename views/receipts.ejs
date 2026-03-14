@@ -1,0 +1,92 @@
+<!-- Receipts Page -->
+<div class="flex justify-between items-center mb-6">
+  <div><h3 class="text-lg font-semibold">Receipts (Incoming Stock)</h3><p class="text-sm text-txt/50">Track goods arriving from suppliers</p></div>
+  <button onclick="openModal('receiptModal')" class="btn btn-primary"><i data-lucide="plus" class="w-4 h-4"></i> New Receipt</button>
+</div>
+
+<div class="card">
+  <div class="overflow-x-auto">
+    <table class="data-table">
+      <thead><tr><th>Reference</th><th>Supplier</th><th>Items</th><th>Total Qty</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
+      <tbody>
+        <% if (receipts.length === 0) { %><tr><td colspan="7" class="text-center py-8 text-txt/40">No receipts yet</td></tr><% } %>
+        <% receipts.forEach(function(r) { %>
+        <tr>
+          <td class="font-mono font-medium text-sm"><%= r.reference %></td>
+          <td><%= r.supplier %></td>
+          <td><%= r.line_count %></td>
+          <td class="font-semibold"><%= parseFloat(r.total_qty) %></td>
+          <td><span class="badge badge-<%= r.status === 'validated' ? 'validated' : 'draft' %>"><%= r.status %></span></td>
+          <td class="text-sm text-txt/50"><%= new Date(r.created_at).toLocaleDateString() %></td>
+          <td>
+            <% if (r.status === 'draft') { %>
+            <button onclick="validateReceipt(<%= r.id %>)" class="btn btn-success btn-sm"><i data-lucide="check" class="w-3 h-3"></i> Validate</button>
+            <% } else { %>
+            <span class="text-xs text-txt/40">Completed</span>
+            <% } %>
+          </td>
+        </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- New Receipt Modal -->
+<div id="receiptModal" class="modal-overlay hidden">
+  <div class="modal-content">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="text-lg font-bold">New Receipt</h3>
+      <button onclick="closeModal('receiptModal')" class="p-1 hover:bg-surface rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <form id="receiptForm" class="space-y-4">
+      <div><label class="block text-xs font-medium mb-1">Supplier *</label><input type="text" id="rSupplier" class="form-input" required></div>
+      <div><label class="block text-xs font-medium mb-1">Notes</label><input type="text" id="rNotes" class="form-input"></div>
+      <div>
+        <label class="block text-xs font-medium mb-2">Product Lines</label>
+        <div id="receiptLines" class="space-y-2"></div>
+        <button type="button" onclick="addReceiptLine()" class="btn btn-secondary btn-sm mt-2"><i data-lucide="plus" class="w-3 h-3"></i> Add Line</button>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" onclick="closeModal('receiptModal')" class="btn btn-secondary">Cancel</button>
+        <button type="submit" class="btn btn-primary">Create Receipt</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+const products = <%- JSON.stringify(products) %>;
+function addReceiptLine() {
+  const div = document.createElement('div');
+  div.className = 'flex gap-2 items-center';
+  div.innerHTML = `<select class="form-input flex-1 rl-product" required>${products.map(p => `<option value="${p.id}">${p.name} (${p.sku})</option>`).join('')}</select>
+    <input type="number" class="form-input w-24 rl-qty" placeholder="Qty" min="1" value="1" required>
+    <button type="button" onclick="this.parentElement.remove()" class="btn btn-danger btn-sm"><i data-lucide="x" class="w-3 h-3"></i></button>`;
+  document.getElementById('receiptLines').appendChild(div);
+  lucide.createIcons();
+}
+addReceiptLine();
+
+document.getElementById('receiptForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const lines = [...document.querySelectorAll('#receiptLines > div')].map(d => ({
+    product_id: parseInt(d.querySelector('.rl-product').value),
+    quantity: parseFloat(d.querySelector('.rl-qty').value)
+  }));
+  try {
+    await apiFetch('/receipts/api', { method: 'POST', body: JSON.stringify({
+      supplier: document.getElementById('rSupplier').value,
+      notes: document.getElementById('rNotes').value, lines
+    })});
+    showToast('Receipt created!');
+    setTimeout(() => location.reload(), 500);
+  } catch(e) {}
+});
+
+async function validateReceipt(id) {
+  if (!confirm('Validate this receipt? Stock will be updated.')) return;
+  try { await apiFetch('/receipts/api/' + id + '/validate', { method: 'POST' }); showToast('Receipt validated! Stock updated.'); setTimeout(() => location.reload(), 500); } catch(e) {}
+}
+lucide.createIcons();
+</script>

@@ -1,0 +1,88 @@
+<!-- Adjustments Page -->
+<div class="flex justify-between items-center mb-6">
+  <div><h3 class="text-lg font-semibold">Inventory Adjustments</h3><p class="text-sm text-txt/50">Fix mismatch between recorded and physical stock</p></div>
+  <button onclick="openModal('adjModal')" class="btn btn-primary"><i data-lucide="plus" class="w-4 h-4"></i> New Adjustment</button>
+</div>
+
+<div class="card">
+  <div class="overflow-x-auto">
+    <table class="data-table">
+      <thead><tr><th>Reference</th><th>Product</th><th>SKU</th><th>Recorded</th><th>Physical</th><th>Adjustment</th><th>Reason</th><th>Date</th></tr></thead>
+      <tbody>
+        <% if (adjustments.length === 0) { %><tr><td colspan="8" class="text-center py-8 text-txt/40">No adjustments yet</td></tr><% } %>
+        <% adjustments.forEach(function(a) { %>
+        <tr>
+          <td class="font-mono text-sm"><%= a.reference %></td>
+          <td class="font-medium"><%= a.product_name %></td>
+          <td class="font-mono text-xs text-txt/50"><%= a.sku %></td>
+          <td><%= parseFloat(a.recorded_qty) %></td>
+          <td><%= parseFloat(a.physical_qty) %></td>
+          <td><span class="badge badge-<%= parseFloat(a.adjustment_qty) < 0 ? 'danger' : 'success' %>"><%= parseFloat(a.adjustment_qty) > 0 ? '+' : '' %><%= parseFloat(a.adjustment_qty) %></span></td>
+          <td class="text-sm"><%= a.reason || '—' %></td>
+          <td class="text-sm text-txt/50"><%= new Date(a.created_at).toLocaleDateString() %></td>
+        </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div id="adjModal" class="modal-overlay hidden">
+  <div class="modal-content">
+    <div class="flex items-center justify-between mb-6">
+      <h3 class="text-lg font-bold">New Adjustment</h3>
+      <button onclick="closeModal('adjModal')" class="p-1 hover:bg-surface rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
+    </div>
+    <form id="adjForm" class="space-y-4">
+      <div>
+        <label class="block text-xs font-medium mb-1">Product *</label>
+        <select id="aProduct" class="form-input" required onchange="updateRecorded()">
+          <option value="">Select product</option>
+          <% products.forEach(function(p) { %><option value="<%= p.id %>" data-stock="<%= p.current_stock %>"><%= p.name %> (<%= p.sku %>) — Current: <%= parseFloat(p.current_stock) %></option><% }); %>
+        </select>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div><label class="block text-xs font-medium mb-1">Recorded Stock</label><input type="number" id="aRecorded" class="form-input bg-surface" readonly></div>
+        <div><label class="block text-xs font-medium mb-1">Physical Count *</label><input type="number" id="aPhysical" class="form-input" min="0" required oninput="calcDiff()"></div>
+      </div>
+      <div id="adjDiff" class="p-3 rounded-xl bg-surface text-center font-semibold hidden"></div>
+      <div><label class="block text-xs font-medium mb-1">Reason</label><input type="text" id="aReason" class="form-input" placeholder="e.g., Damaged during transport"></div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" onclick="closeModal('adjModal')" class="btn btn-secondary">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Adjustment</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function updateRecorded() {
+  const sel = document.getElementById('aProduct');
+  const opt = sel.options[sel.selectedIndex];
+  document.getElementById('aRecorded').value = opt.dataset.stock || '';
+  document.getElementById('aPhysical').value = '';
+  document.getElementById('adjDiff').classList.add('hidden');
+}
+function calcDiff() {
+  const rec = parseFloat(document.getElementById('aRecorded').value) || 0;
+  const phy = parseFloat(document.getElementById('aPhysical').value) || 0;
+  const diff = phy - rec;
+  const el = document.getElementById('adjDiff');
+  el.classList.remove('hidden');
+  el.textContent = `Adjustment: ${diff > 0 ? '+' : ''}${diff}`;
+  el.className = `p-3 rounded-xl text-center font-semibold ${diff < 0 ? 'bg-danger/10 text-danger' : diff > 0 ? 'bg-success/10 text-success' : 'bg-surface text-txt/50'}`;
+}
+document.getElementById('adjForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  try {
+    await apiFetch('/adjustments/api', { method: 'POST', body: JSON.stringify({
+      product_id: parseInt(document.getElementById('aProduct').value),
+      physical_qty: parseFloat(document.getElementById('aPhysical').value),
+      reason: document.getElementById('aReason').value
+    })});
+    showToast('Adjustment saved!');
+    setTimeout(() => location.reload(), 500);
+  } catch(e) {}
+});
+lucide.createIcons();
+</script>

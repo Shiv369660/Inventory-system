@@ -1,0 +1,403 @@
+<!-- KPI Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
+  <div class="kpi-card primary">
+    <div class="flex items-center justify-between mb-2">
+      <span class="text-xs font-semibold text-txt/50 uppercase tracking-wider">Products</span>
+      <div class="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center"><i data-lucide="package" class="w-4 h-4 text-primary"></i></div>
+    </div>
+    <p class="text-2xl font-bold text-txt"><%= kpi.totalProducts %></p>
+  </div>
+  <div class="kpi-card danger">
+    <div class="flex items-center justify-between mb-2">
+      <span class="text-xs font-semibold text-txt/50 uppercase tracking-wider">Low Stock</span>
+      <div class="w-8 h-8 rounded-lg bg-danger/10 flex items-center justify-center"><i data-lucide="alert-triangle" class="w-4 h-4 text-danger"></i></div>
+    </div>
+    <p class="text-2xl font-bold text-danger"><%= kpi.lowStock %></p>
+  </div>
+  <div class="kpi-card warning">
+    <div class="flex items-center justify-between mb-2">
+      <span class="text-xs font-semibold text-txt/50 uppercase tracking-wider">Pending Receipts</span>
+      <div class="w-8 h-8 rounded-lg bg-warning/10 flex items-center justify-center"><i data-lucide="download" class="w-4 h-4 text-warning"></i></div>
+    </div>
+    <p class="text-2xl font-bold text-txt"><%= kpi.pendingReceipts %></p>
+  </div>
+  <div class="kpi-card warning">
+    <div class="flex items-center justify-between mb-2">
+      <span class="text-xs font-semibold text-txt/50 uppercase tracking-wider">Pending Deliveries</span>
+      <div class="w-8 h-8 rounded-lg bg-warning/10 flex items-center justify-center"><i data-lucide="upload" class="w-4 h-4 text-warning"></i></div>
+    </div>
+    <p class="text-2xl font-bold text-txt"><%= kpi.pendingDeliveries %></p>
+  </div>
+  <div class="kpi-card info">
+    <div class="flex items-center justify-between mb-2">
+      <span class="text-xs font-semibold text-txt/50 uppercase tracking-wider">Transfers</span>
+      <div class="w-8 h-8 rounded-lg bg-secondary/10 flex items-center justify-center"><i data-lucide="repeat" class="w-4 h-4 text-secondary"></i></div>
+    </div>
+    <p class="text-2xl font-bold text-txt"><%= kpi.totalTransfers %></p>
+  </div>
+  <div class="kpi-card success">
+    <div class="flex items-center justify-between mb-2">
+      <span class="text-xs font-semibold text-txt/50 uppercase tracking-wider">Health Score</span>
+      <div class="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center"><i data-lucide="heart-pulse" class="w-4 h-4 text-success"></i></div>
+    </div>
+    <p class="text-2xl font-bold text-success"><%= kpi.healthScore %>%</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
+  <!-- Stock by Category Chart -->
+  <div class="card col-span-1">
+    <h3 class="font-semibold mb-4 flex items-center gap-2"><i data-lucide="pie-chart" class="w-4 h-4 text-primary"></i> Stock by Category</h3>
+    <canvas id="categoryChart" height="220"></canvas>
+  </div>
+  <!-- Activity Chart -->
+  <div class="card col-span-1">
+    <h3 class="font-semibold mb-4 flex items-center gap-2"><i data-lucide="bar-chart-3" class="w-4 h-4 text-primary"></i> Weekly Activity</h3>
+    <canvas id="activityChart" height="220"></canvas>
+  </div>
+  <!-- Inventory Copilot Panel / Automation Engine -->
+  <div class="copilot-card col-span-1" id="copilotContainer">
+    <h3 class="font-semibold mb-3 flex items-center gap-2">
+      <i data-lucide="bot" class="w-5 h-5"></i> Inventory Copilot
+    </h3>
+    <p class="text-white/70 text-xs mb-4">Smart insights & automation actions.</p>
+    
+    <div id="copilotPanel" class="space-y-2 max-h-[250px] overflow-y-auto pr-1">
+      <!-- Alerts populated by Automation Engine -->
+    </div>
+    
+    <div class="mt-4 pt-4 border-t border-white/20">
+      <h4 class="text-xs text-white/90 font-semibold mb-2">Automation Tools</h4>
+      <div class="flex gap-2">
+        <button onclick="testVendorRec()" class="btn btn-secondary text-xs flex-1 py-1.5 border-none"><i data-lucide="award" class="w-3 h-3 mr-1 inline"></i> Find Vendor</button>
+        <button onclick="testPathOptimizer()" class="btn btn-secondary text-xs flex-1 py-1.5 border-none"><i data-lucide="route" class="w-3 h-3 mr-1 inline"></i> Optimize Path</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Stock Prediction Table -->
+<div class="card mb-6">
+  <h3 class="font-semibold mb-4 flex items-center gap-2"><i data-lucide="trending-up" class="w-4 h-4 text-primary"></i> Stock Run-Out Prediction</h3>
+  <div class="overflow-x-auto">
+    <table class="data-table">
+      <thead><tr><th>Product</th><th>SKU</th><th>Location</th><th>Stock</th><th>Daily Usage</th><th>Days Left</th><th>Reorder Qty</th><th>Status</th></tr></thead>
+      <tbody>
+        <% predictions.forEach(function(p) { var color = p.days_remaining > 20 ? 'success' : p.days_remaining > 10 ? 'warning' : 'danger'; %>
+        <tr>
+          <td class="font-medium"><%= p.name %></td>
+          <td class="text-txt/50 text-xs font-mono"><%= p.sku %></td>
+          <td class="text-sm"><%= p.warehouse_name || '' %> / <%= p.location_name || '' %></td>
+          <td><%= parseFloat(p.current_stock) %></td>
+          <td><%= parseFloat(p.daily_usage) %>/day</td>
+          <td><span class="badge badge-<%= color %>"><%= p.days_remaining %> days</span></td>
+          <td><%= parseFloat(p.reorder_qty) %></td>
+          <td><span class="badge badge-<%= color %>"><%= color === 'danger' ? 'Critical' : color === 'warning' ? 'Low' : 'OK' %></span></td>
+        </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Recent Activity Timeline -->
+<div class="card">
+  <h3 class="font-semibold mb-4 flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4 text-primary"></i> Recent Activity</h3>
+  <div class="space-y-0">
+    <% recentMovements.forEach(function(m) { %>
+    <div class="timeline-item animate-fadeIn">
+      <div class="timeline-dot <%= m.operation_type %>"></div>
+      <div class="flex items-start justify-between flex-wrap gap-2">
+        <div>
+          <p class="font-medium text-sm"><%= m.product_name || 'Product' %></p>
+          <p class="text-xs text-txt/50"><%= m.from_location %> → <%= m.to_location %></p>
+        </div>
+        <div class="text-right">
+          <span class="badge badge-<%= m.operation_type === 'receipt' ? 'success' : m.operation_type === 'delivery' ? 'danger' : m.operation_type === 'transfer' ? 'warning' : 'info' %>">
+            <%= m.operation_type %> · <%= parseFloat(m.quantity) %>
+          </span>
+          <p class="text-xs text-txt/40 mt-1"><%= new Date(m.created_at).toLocaleString() %></p>
+        </div>
+      </div>
+    </div>
+    <% }); %>
+  </div>
+</div>
+
+<script id="catLabelsData" type="application/json"><%- JSON.stringify(stockByCategory.map(s => s.category)) %></script>
+<script id="catDataData" type="application/json"><%- JSON.stringify(stockByCategory.map(s => parseFloat(s.total_stock))) %></script>
+<script id="movDataData" type="application/json"><%- JSON.stringify(movementsPerDay) %></script>
+<script id="productsData" type="application/json"><%- JSON.stringify(typeof automationProducts !== 'undefined' ? automationProducts : []) %></script>
+
+<script>
+  // Category Doughnut Chart
+  const catLabels = JSON.parse(document.getElementById('catLabelsData').textContent);
+  const catData = JSON.parse(document.getElementById('catDataData').textContent);
+  new Chart(document.getElementById('categoryChart'), {
+    type: 'doughnut',
+    data: {
+      labels: catLabels,
+      datasets: [{ data: catData, backgroundColor: ['#714B67','#875A7B','#28A745','#F0AD4E','#DC3545','#6C757D','#17A2B8','#5A3A52'], borderWidth: 0 }]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 8, font: { size: 11 } } } }, cutout: '65%' }
+  });
+
+  // Activity Bar Chart
+  const movData = JSON.parse(document.getElementById('movDataData').textContent);
+  const days = [...new Set(movData.map(m => m.day))].sort();
+  const types = ['receipt','delivery','transfer','adjustment'];
+  const typeColors = { receipt:'#28A745', delivery:'#DC3545', transfer:'#F0AD4E', adjustment:'#875A7B' };
+  new Chart(document.getElementById('activityChart'), {
+    type: 'bar',
+    data: {
+      labels: days.map(d => new Date(d).toLocaleDateString('en-US',{weekday:'short'})),
+      datasets: types.map(t => ({
+        label: t.charAt(0).toUpperCase()+t.slice(1),
+        data: days.map(d => { const f = movData.find(m => m.day === d && m.operation_type === t); return f ? parseInt(f.count) : 0; }),
+        backgroundColor: typeColors[t], borderRadius: 4
+      }))
+    },
+    options: { responsive: true, scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } }, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 8, font: { size: 11 } } } } }
+  });
+
+  // --- Automation Engine Core Logic ---
+  const products = JSON.parse(document.getElementById('productsData').textContent);
+  
+  function automationEngine(products) {
+    const alerts = [];
+    const today = new Date();
+    
+    products.forEach(p => {
+      const usage = p.dailyUsage > 0 ? p.dailyUsage : 5;
+      const daysRemaining = p.stock / usage;
+      
+      // Rule 1: Low Stock Detection
+      if (p.stock <= p.minStock) {
+        alerts.push({
+          type: "LOW_STOCK",
+          product: p.name,
+          stock: p.stock,
+          reorderQty: usage * 14,
+          supplier: p.supplierEmail
+        });
+      }
+      
+      // Rule 2: Stock Runout Prediction
+      if (p.dailyUsage > 0 && daysRemaining < 5) {
+        // Prevent duplicate alerts if already low stock
+        if (p.stock > p.minStock) {
+          alerts.push({
+            type: "RUNOUT",
+            product: p.name,
+            days: Math.floor(daysRemaining)
+          });
+        }
+      }
+      
+      // Rule 3: Dead Inventory Detection
+      if (p.lastMovedDate) {
+        const lastMove = new Date(p.lastMovedDate);
+        const diffDays = Math.floor((today - lastMove) / (1000*60*60*24));
+        if (diffDays > 30) {
+          alerts.push({
+            type: "DEAD_STOCK",
+            product: p.name,
+            days: diffDays
+          });
+        }
+      }
+      
+      // Rule 4: Demand Spike Detection
+      if (p.todayMovement && p.dailyUsage > 0 && p.todayMovement > p.dailyUsage * 3) {
+        alerts.push({
+          type: "SPIKE",
+          product: p.name,
+          today: p.todayMovement,
+          normal: p.dailyUsage
+        });
+      }
+    });
+
+    return alerts;
+  }
+
+  function renderCopilot(alerts) {
+    const panel = document.getElementById("copilotPanel");
+    panel.innerHTML = ""; // Clear existing
+    
+    // Add backend generic alerts if no automation alerts exist
+    if(alerts.length === 0) {
+      panel.innerHTML = `<div class="copilot-alert bg-white/10 text-white rounded p-3"><i data-lucide="check-circle" class="w-4 h-4 mr-2 inline"></i> All inventory levels look healthy!</div>`;
+    }
+
+    alerts.forEach(alert => {
+      let icon = '', title = '', content = '', action = '';
+      
+      if (alert.type === "LOW_STOCK") {
+        icon = 'alert-triangle';
+        title = `Low Stock: ${alert.product}`;
+        content = `Current stock: ${parseFloat(alert.stock).toFixed(1)}. Suggested order: ${parseFloat(alert.reorderQty).toFixed(1)}`;
+        action = `<button onclick="generateOrder('${alert.product}', ${alert.reorderQty}, '${alert.supplier}')" class="mt-2 text-xs bg-white text-primary px-3 py-1.5 rounded font-semibold w-full flex items-center justify-center gap-1 hover:bg-gray-100 transition-colors">
+                    <i data-lucide="mail" class="w-3 h-3"></i> Generate Purchase Order
+                  </button>`;
+      } else if (alert.type === "RUNOUT") {
+        icon = 'clock';
+        title = `Run-out Risk: ${alert.product}`;
+        content = `Will run out in ${alert.days} days based on current usage.`;
+        action = `<button class="mt-2 text-xs bg-white/20 text-white border border-white/30 px-3 py-1.5 rounded w-full hover:bg-white/30 transition-colors">Review Usage</button>`;
+      } else if (alert.type === "DEAD_STOCK") {
+        icon = 'archive';
+        title = `Dead Stock: ${alert.product}`;
+        content = `No movement in ${alert.days} days.`;
+        action = `<button onclick="alert('Discount campaign feature coming soon!')" class="mt-2 text-xs bg-white/20 text-white border border-white/30 px-3 py-1.5 rounded w-full flex items-center justify-center gap-1 hover:bg-white/30 transition-colors">
+                    <i data-lucide="tag" class="w-3 h-3"></i> Mark Discount
+                  </button>`;
+      } else if (alert.type === "SPIKE") {
+        icon = 'trending-up';
+        title = `Demand Spike: ${alert.product}`;
+        content = `Unusual activity! Today's usage (${alert.today}) is much higher than average (${alert.normal}/day).`;
+        action = `<button onclick="alert('Auditing inventory for ${alert.product}...')" class="mt-2 text-xs bg-white/20 text-white border border-white/30 px-3 py-1.5 rounded w-full flex items-center justify-center gap-1 hover:bg-white/30 transition-colors">
+                    <i data-lucide="search" class="w-3 h-3"></i> Audit Inventory
+                  </button>`;
+      }
+
+      panel.innerHTML += `
+        <div class="mb-3 p-3 bg-black/20 rounded-lg border border-white/10">
+          <h4 class="font-medium text-sm mb-1 text-white flex items-center gap-2">
+            <i data-lucide="${icon}" class="w-4 h-4 text-warning"></i>
+            <span>${title}</span>
+          </h4>
+          <p class="text-xs text-white/80 mb-2">${content}</p>
+          ${action}
+        </div>
+      `;
+    });
+    lucide.createIcons();
+  }
+
+  function generateOrder(product, qty, supplier) {
+    const subject = `Purchase Order - ${product}`;
+    const body = `Dear Supplier,\n\nPlease supply the following product:\n\nProduct: ${product}\nQuantity: ${qty}\n\nRegards\nInventory Team`;
+    const mailtoLink = `mailto:${supplier}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = mailtoLink;
+  }
+
+  function calculateRunOut(product) {
+    if(product.dailyUsage <= 0) return 'N/A';
+    return Math.floor(product.stock / product.dailyUsage);
+  }
+
+  function detectDeadStock(product) {
+    if(!product.lastMovedDate) return true; // Never moved
+    const today = new Date();
+    const lastMove = new Date(product.lastMovedDate);
+    const diffDays = (today - lastMove) / (1000*60*60*24);
+    return diffDays > 30;
+  }
+
+  // 8. Vendor Recommendation Logic
+  function recommendVendor(vendors) {
+    if (!vendors || vendors.length === 0) return null;
+    let bestVendor = null;
+    let maxScore = -Infinity;
+    
+    vendors.forEach(vendor => {
+      // Score formula: score = reliability * 2 - price/100 + (5 - deliveryDays)
+      const score = (vendor.reliability * 2) - (vendor.price / 100) + (5 - vendor.deliveryDays);
+      if (score > maxScore) {
+        maxScore = score;
+        bestVendor = vendor;
+      }
+    });
+    return bestVendor;
+  }
+
+  // 9. Warehouse Path Optimizer
+  function optimizeWarehousePath(racks) {
+    if (!racks || racks.length === 0) return [];
+    // Simple sort for optimized path: A -> B -> C -> D
+    return [...racks].sort();
+  }
+
+  // --- Testing Automation Functions ---
+  function testVendorRec() {
+    window.open('https://dir.indiamart.com/', '_blank');
+  }
+
+  function testPathOptimizer() {
+    // Simulate finding items that need to be picked for today's orders
+    const pickList = [
+      { product: "Steel Rods", location: "Aisle A, Rack 3", qty: 50 },
+      { product: "Safety Goggles", location: "Aisle C, Rack 1", qty: 15 },
+      { product: "Heavy Duty Tape", location: "Aisle A, Rack 2", qty: 10 },
+      { product: "Cardboard Boxes", location: "Aisle B, Rack 4", qty: 100 },
+      { product: "Bubble Wrap", location: "Aisle B, Rack 1", qty: 5 }
+    ];
+    
+    // The "Optimization" sorts by Aisle and Rack to prevent walking back and forth
+    pickList.sort((a, b) => a.location.localeCompare(b.location));
+    
+    const panel = document.getElementById("copilotPanel");
+    
+    let listHTML = pickList.map((item, i) => `
+      <div class="flex items-center justify-between py-1.5 border-b border-white/10 last:border-0">
+        <div class="flex items-center gap-2">
+          <div class="w-5 h-5 rounded-full bg-black/40 text-[10px] flex items-center justify-center font-bold">${i+1}</div>
+          <div>
+            <div class="text-xs font-semibold text-white">${item.product}</div>
+            <div class="text-[10px] text-primary-light font-mono">${item.location}</div>
+          </div>
+        </div>
+        <div class="text-xs font-bold bg-white/10 px-2 py-1 rounded">x${item.qty}</div>
+      </div>
+    `).join('');
+
+    const alertHTML = `
+      <div class="mb-3 p-3 bg-primary/20 rounded-lg border border-primary/30 animate-fadeIn">
+        <h4 class="font-medium text-sm mb-2 text-white flex items-center justify-between">
+          <span class="flex items-center gap-2"><i data-lucide="route" class="w-4 h-4 text-primary-light"></i> Smart Picking List</span>
+          <span class="text-[10px] bg-success/20 text-success px-1.5 py-0.5 rounded border border-success/30">Optimized Walk</span>
+        </h4>
+        <div class="text-xs text-white/70 mb-2">Items sorted by physical location to minimize warehouse walking distance.</div>
+        <div class="bg-black/20 rounded border border-white/5 p-2">
+          ${listHTML}
+        </div>
+        <button class="mt-2 text-xs bg-white text-primary px-3 py-1.5 rounded font-semibold w-full flex items-center justify-center gap-1 hover:bg-gray-100 transition-colors">
+          <i data-lucide="printer" class="w-3 h-3"></i> Print Pick List
+        </button>
+      </div>
+    `;
+    
+    // Insert at the top of the panel
+    panel.insertAdjacentHTML('afterbegin', alertHTML);
+    lucide.createIcons();
+  }
+
+  function activateCrisisMode() {
+    // Inventory Crisis Mode styling
+    const body = document.body;
+    body.style.borderTop = "8px solid #ef4444"; // Red top border
+    const headerTitle = document.querySelector('header h2');
+    if(headerTitle) {
+      headerTitle.innerHTML = `<span class="text-danger flex items-center gap-2"><i data-lucide="alert-octagon" class="w-6 h-6 animate-pulse"></i> INVENTORY CRISIS MODE</span>`;
+    }
+    const panel = document.getElementById("copilotContainer");
+    if(panel) {
+      panel.classList.add("border", "border-danger", "bg-danger/20");
+    }
+  }
+
+  // Auto-run when dashboard loads
+  const alerts = automationEngine(products);
+  
+  if (alerts.length >= 5) {
+    activateCrisisMode();
+  }
+  
+  renderCopilot(alerts);
+  
+  document.addEventListener("DOMContentLoaded", () => {
+     lucide.createIcons();
+  });
+  lucide.createIcons();
+</script>

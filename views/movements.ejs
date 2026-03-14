@@ -1,0 +1,47 @@
+<!-- Move History Page -->
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+  <div><h3 class="text-lg font-semibold">Move History</h3><p class="text-sm text-txt/50">Complete stock movement ledger</p></div>
+  <div class="flex gap-2">
+    <a href="/movements" class="btn btn-sm <%= !type ? 'btn-primary' : 'btn-secondary' %>">All</a>
+    <a href="/movements?type=receipt" class="btn btn-sm <%= type==='receipt' ? 'btn-primary' : 'btn-secondary' %>">Receipts</a>
+    <a href="/movements?type=delivery" class="btn btn-sm <%= type==='delivery' ? 'btn-primary' : 'btn-secondary' %>">Deliveries</a>
+    <a href="/movements?type=transfer" class="btn btn-sm <%= type==='transfer' ? 'btn-primary' : 'btn-secondary' %>">Transfers</a>
+    <a href="/movements?type=adjustment" class="btn btn-sm <%= type==='adjustment' ? 'btn-primary' : 'btn-secondary' %>">Adjustments</a>
+  </div>
+</div>
+
+<div class="card">
+  <% if (movements.length === 0) { %>
+    <div class="empty-state"><i data-lucide="inbox" class="w-12 h-12 mx-auto text-txt/20"></i><p class="mt-2">No movements found</p></div>
+  <% } else { %>
+  <div class="space-y-0 pl-2">
+    <% var lastDate = ''; movements.forEach(function(m) {
+      var d = new Date(m.created_at).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+      var time = new Date(m.created_at).toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' });
+      var showDate = d !== lastDate; lastDate = d;
+    %>
+    <% if (showDate) { %><div class="py-2 pl-8 text-xs font-bold text-txt/40 uppercase tracking-wider"><%= d %></div><% } %>
+    <div class="timeline-item animate-fadeIn">
+      <div class="timeline-dot <%= m.operation_type %>"></div>
+      <div class="flex items-start justify-between flex-wrap gap-2">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-mono text-txt/40"><%= time %></span>
+            <span class="badge badge-<%= m.operation_type === 'receipt' ? 'success' : m.operation_type === 'delivery' ? 'danger' : m.operation_type === 'transfer' ? 'warning' : 'info' %> text-[10px]"><%= m.operation_type.toUpperCase() %></span>
+          </div>
+          <p class="font-medium text-sm mt-1"><%= m.product_name %> <span class="text-txt/40 font-mono text-xs">(<%= m.sku %>)</span></p>
+          <p class="text-xs text-txt/50 mt-0.5"><i data-lucide="arrow-right" class="w-3 h-3 inline"></i> <%= m.from_location %> → <%= m.to_location %></p>
+        </div>
+        <div class="text-right">
+          <span class="text-lg font-bold <%= m.operation_type === 'receipt' ? 'text-success' : m.operation_type === 'delivery' ? 'text-danger' : 'text-txt' %>">
+            <%= m.operation_type === 'receipt' ? '+' : m.operation_type === 'delivery' ? '-' : '' %><%= parseFloat(m.quantity) %>
+          </span>
+          <p class="text-xs text-txt/40 font-mono"><%= m.reference %></p>
+        </div>
+      </div>
+    </div>
+    <% }); %>
+  </div>
+  <% } %>
+</div>
+<script>lucide.createIcons();</script>
