@@ -9,3 +9,5 @@
   from = "/*"
   to = "/.netlify/functions/api"
   status = 200
+
+# Trigger CI/CD Cloud Build
