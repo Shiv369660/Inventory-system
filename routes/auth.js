@@ -53,8 +53,8 @@ router.post('/login', async (req, res) => {
     req.session.user = { id: user.id, name: user.name, email: user.email, role: user.role };
     res.redirect('/dashboard');
   } catch (err) {
-    console.error(err);
-    res.render('login', { layout: false, title: 'Login', error: 'An error occurred. Please try again.' });
+    console.error('LOGIN ERROR:', err);
+    res.render('login', { layout: false, title: 'Login', error: `An error occurred: ${err.message}. Stack: ${err.stack}` });
   }
 });
 
