@@ -3,12 +3,12 @@ const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcryptjs'); // Bug #25 fix: moved from inline require inside seedDatabase()
 
-const isNetlify = !!process.env.NETLIFY;
-const dbPath = isNetlify 
+const isServerless = !!(process.env.LAMBDA_TASK_ROOT || process.env.NETLIFY || process.env.NETLIFY_DEV);
+const dbPath = isServerless 
   ? path.join(process.cwd(), 'db', 'coreinventory.db')
   : path.join(__dirname, 'coreinventory.db');
 
-const db = new Database(dbPath, { readonly: isNetlify });
+const db = new Database(dbPath, { readonly: isServerless });
 
 // Enable WAL mode for better concurrency
 try {
@@ -322,7 +322,7 @@ function seedDatabase() {
 }
 
 // Run initialization (skip in Netlify read-only environments)
-if (!isNetlify) {
+if (!isServerless) {
   initializeDatabase();
 }
 
