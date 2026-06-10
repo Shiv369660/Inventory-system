@@ -1,208 +1,192 @@
-/* Landing Page Animations & Styles */
+/* ─── CoreInventory Landing Page — Design-Engineered CSS ───────────────────
+   Applying Emil Kowalski + Vercel React Best Practices:
+   • Custom easing curves (never plain ease/ease-in)
+   • Specific transition properties (never `transition: all`)
+   • Scroll-triggered reveal via .in-view class (IntersectionObserver in JS)
+   • Touch-safe hover states gated behind @media (hover: hover)
+   • prefers-reduced-motion respected
+   • Feature cards start visible (opacity:1) — JS adds .reveal class
+   • No animation-delay > 600ms to avoid perception of slowness
+──────────────────────────────────────────────────────────────────────────── */
 
-/* Hero Animation */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* ── Custom Easing Variables ─────────────────────────────────────────────── */
+:root {
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-out-gentle: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.hero-text {
-  animation: fadeIn 1s ease-out;
-}
+/* ── Smooth Scroll ───────────────────────────────────────────────────────── */
+html { scroll-behavior: smooth; }
 
-.hero-image {
-  animation: fadeIn 1s ease-out 0.2s both;
-}
-
-/* Floating Animation */
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-@keyframes floatDelayed {
-  0%, 100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-.animate-float {
-  animation: float 4s ease-in-out infinite;
-}
-
-.animate-float-delayed {
-  animation: floatDelayed 4s ease-in-out infinite;
-  animation-delay: 1s;
-}
-
-/* Feature Card Hover Effects */
-.feature-card {
-  transition: all 0.3s ease;
-}
-
-.feature-card:hover {
-  transform: translateY(-5px);
-}
-
-/* Smooth Scroll */
-html {
-  scroll-behavior: smooth;
-}
-
-/* Navbar Scroll Effect */
+/* ── Navbar ──────────────────────────────────────────────────────────────── */
 .navbar-scrolled {
-  background: rgba(255, 255, 255, 0.95);
-  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.98) !important;
+  box-shadow: 0 1px 24px rgba(0, 0, 0, 0.07);
 }
 
-/* Button Hover Glow */
-.btn-glow {
-  transition: all 0.3s ease;
+/* Underline effect — specific properties, not `all` */
+.nav-link-hover { position: relative; }
+.nav-link-hover::after {
+  content: '';
+  position: absolute;
+  bottom: -2px; left: 0;
+  width: 0; height: 2px;
+  background: #714B67;
+  border-radius: 2px;
+  transition: width 220ms var(--ease-out-strong);
+}
+@media (hover: hover) and (pointer: fine) {
+  .nav-link-hover:hover::after { width: 100%; }
 }
 
-.btn-glow:hover {
-  box-shadow: 0 10px 40px rgba(37, 99, 235, 0.3);
+/* ── Hero Entry Animations ───────────────────────────────────────────────── */
+/* Elements start hidden; JS adds .in-view to trigger these */
+
+@keyframes heroTextIn {
+  from { opacity: 0; transform: translateY(16px) scale(0.99); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+@keyframes heroImageIn {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
 }
 
-/* Gradient Text */
+/* Hero starts visible — no FOUC risk */
+.hero-text { opacity: 1; }
+.hero-image { opacity: 1; }
+
+/* Triggered by JS adding .animate class */
+.hero-text.animate  { animation: heroTextIn  680ms var(--ease-out-strong) both; }
+.hero-image.animate { animation: heroImageIn 780ms var(--ease-out-strong) 120ms both; }
+
+/* ── Scroll-Reveal Base ──────────────────────────────────────────────────── */
+/* Elements decorated with [data-reveal] start hidden, become visible when
+   IntersectionObserver adds .in-view. This is better than using animation-delay
+   on page load (which fires regardless of scroll position). */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 520ms var(--ease-out-strong),
+              transform 520ms var(--ease-out-strong);
+}
+[data-reveal].in-view {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Stagger children when parent has data-reveal-stagger */
+[data-reveal-stagger] > * {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 480ms var(--ease-out-strong),
+              transform 480ms var(--ease-out-strong);
+}
+[data-reveal-stagger].in-view > *:nth-child(1) { opacity:1; transform:none; transition-delay:  0ms; }
+[data-reveal-stagger].in-view > *:nth-child(2) { opacity:1; transform:none; transition-delay: 60ms; }
+[data-reveal-stagger].in-view > *:nth-child(3) { opacity:1; transform:none; transition-delay:120ms; }
+[data-reveal-stagger].in-view > *:nth-child(4) { opacity:1; transform:none; transition-delay:180ms; }
+[data-reveal-stagger].in-view > *:nth-child(5) { opacity:1; transform:none; transition-delay:240ms; }
+[data-reveal-stagger].in-view > *:nth-child(6) { opacity:1; transform:none; transition-delay:300ms; }
+
+/* ── Feature Cards ───────────────────────────────────────────────────────── */
+.feature-card {
+  /* specific properties — never `transition: all` */
+  transition: box-shadow      220ms var(--ease-out-strong),
+              transform       220ms var(--ease-out-strong),
+              background-color 180ms var(--ease-out-strong),
+              border-color     180ms var(--ease-out-strong);
+}
+/* Touch-safe: only apply lift on pointer devices */
+@media (hover: hover) and (pointer: fine) {
+  .feature-card:hover { transform: translateY(-4px); }
+}
+/* :active provides immediate press feedback on all devices */
+.feature-card:active { transform: scale(0.99); }
+
+/* ── Floating Hero Badges ────────────────────────────────────────────────── */
+@keyframes floatBadge {
+  0%, 100% { transform: translateY(0);    }
+  50%       { transform: translateY(-8px); }
+}
+/* Decorative + rare (stays on screen) — ease-in-out is correct for looping */
+.animate-float         { animation: floatBadge 3.5s ease-in-out infinite; }
+.animate-float-delayed { animation: floatBadge 3.5s ease-in-out 1.2s infinite; }
+
+/* ── Workflow Steps ───────────────────────────────────────────────────────── */
+/* Handled by data-reveal-stagger — no hardcoded delays needed */
+.workflow-step { /* inherits [data-reveal-stagger] > * styles */ }
+
+/* ── Dashboard Bar Chart Animation ──────────────────────────────────────── */
+@keyframes barGrow {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+.bar-animated {
+  transform-origin: bottom;
+  animation: barGrow 600ms var(--ease-out-strong) both;
+}
+
+/* ── Stats / Counter ─────────────────────────────────────────────────────── */
+@keyframes countIn {
+  from { opacity: 0; transform: translateY(6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)   scale(1);    }
+}
+.stat-number { animation: countIn 500ms var(--ease-out-strong) both; }
+
+/* ── CTA Orb Background ─────────────────────────────────────────────────── */
+@keyframes orbPulse {
+  0%, 100% { opacity: 0.08; transform: scale(1);   }
+  50%       { opacity: 0.14; transform: scale(1.04); }
+}
+.cta-orb { animation: orbPulse 5s ease-in-out infinite; }
+
+/* ── Gradient Text ───────────────────────────────────────────────────────── */
 .gradient-text {
-  background: linear-gradient(135deg, #2563EB 0%, #3B82F6 100%);
+  background: linear-gradient(135deg, #714B67 0%, #875A7B 60%, #5A3A52 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-/* Stats Counter Animation */
-@keyframes countUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.stat-number {
-  animation: countUp 0.8s ease-out;
-}
-
-/* Workflow Step Connector Animation */
-.workflow-step {
-  opacity: 0;
-  transform: translateY(20px);
-  animation: fadeIn 0.6s ease-out forwards;
-}
-
-.workflow-step:nth-child(1) {
-  animation-delay: 0.1s;
-}
-
-.workflow-step:nth-child(2) {
-  animation-delay: 0.3s;
-}
-
-.workflow-step:nth-child(3) {
-  animation-delay: 0.5s;
-}
-
-/* CTA Section Background Animation */
-@keyframes pulse {
-  0%, 100% {
-    opacity: 0.1;
-  }
-  50% {
-    opacity: 0.2;
-  }
-}
-
-.cta-bg-pattern {
-  animation: pulse 4s ease-in-out infinite;
-}
-
-/* Link Hover Underline Effect */
-.nav-link-hover {
-  position: relative;
-}
-
-.nav-link-hover::after {
-  content: '';
-  position: absolute;
-  bottom: -2px;
-  left: 0;
-  width: 0;
-  height: 2px;
-  background: #714B67;
-  transition: width 0.3s ease;
-}
-
-.nav-link-hover:hover::after {
-  width: 100%;
-}
-
-/* Card Entrance Animation */
-@keyframes slideInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.feature-card {
-  opacity: 0;
-  animation: slideInUp 0.6s ease-out forwards;
-}
-
-.feature-card:nth-child(1) { animation-delay: 0.1s; }
-.feature-card:nth-child(2) { animation-delay: 0.2s; }
-.feature-card:nth-child(3) { animation-delay: 0.3s; }
-.feature-card:nth-child(4) { animation-delay: 0.4s; }
-.feature-card:nth-child(5) { animation-delay: 0.5s; }
-.feature-card:nth-child(6) { animation-delay: 0.6s; }
-
-/* Responsive Adjustments */
-@media (max-width: 768px) {
-  .hero-text h1 {
-    font-size: 2.5rem;
-  }
-  
-  .feature-card:hover {
-    transform: translateY(-3px);
-  }
-}
-
-/* Focus States for Accessibility */
+/* ── Focus Accessibility ─────────────────────────────────────────────────── */
 a:focus-visible,
 button:focus-visible {
-  outline: 2px solid #2563EB;
-  outline-offset: 2px;
+  outline: 2px solid #714B67;
+  outline-offset: 3px;
+  border-radius: 4px;
 }
 
-/* Reduced Motion Preference */
+/* ── Buttons — active press feedback ────────────────────────────────────── */
+.btn-landing {
+  transition: background-color 160ms var(--ease-out-strong),
+              box-shadow        160ms var(--ease-out-strong),
+              transform         160ms var(--ease-out-strong);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.btn-landing:active { transform: scale(0.97); }
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .hero-text h1 { font-size: 2.25rem; line-height: 1.15; }
+  /* Disable lift on touch */
+  .feature-card:hover { transform: none; }
+}
+
+/* ── Reduced Motion ─────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    animation-duration:        0.01ms !important;
+    animation-iteration-count: 1      !important;
+    transition-duration:       0.01ms !important;
+  }
+  [data-reveal],
+  [data-reveal-stagger] > * {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
   }
 }

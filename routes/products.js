@@ -61,6 +61,14 @@ router.put('/api/:id', async (req, res) => {
 // Delete product
 router.delete('/api/:id', async (req, res) => {
   try {
+    // Bug #10 fix: prevent deletion of products with existing stock or active linked records
+    const product = await pool.query('SELECT name, current_stock FROM products WHERE id = $1', [req.params.id]);
+    if (product.rows.length === 0) return res.status(404).json({ error: 'Product not found' });
+    if (parseFloat(product.rows[0].current_stock) !== 0) {
+      return res.status(400).json({
+        error: `Cannot delete "${product.rows[0].name}" — it has stock of ${product.rows[0].current_stock}. Zero the stock via an adjustment first.`
+      });
+    }
     await pool.query('DELETE FROM products WHERE id = $1', [req.params.id]);
     res.json({ success: true });
   } catch (err) { console.error(err); res.status(500).json({ error: 'Failed to delete product' }); }

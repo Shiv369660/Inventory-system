@@ -35,20 +35,22 @@ router.post('/api/locations', async (req, res) => {
   } catch (err) { console.error(err); res.status(500).json({ error: 'Failed to create location' }); }
 });
 
+// Bug #14 fix: more-specific route registered FIRST to prevent /api/:id swallowing 'locations'
+
+// Delete location (must be before DELETE /api/:id)
+router.delete('/api/locations/:id', async (req, res) => {
+  try {
+    await pool.query('DELETE FROM locations WHERE id = $1', [req.params.id]);
+    res.json({ success: true });
+  } catch (err) { console.error(err); res.status(500).json({ error: 'Failed to delete location' }); }
+});
+
 // Delete warehouse
 router.delete('/api/:id', async (req, res) => {
   try {
     await pool.query('DELETE FROM warehouses WHERE id = $1', [req.params.id]);
     res.json({ success: true });
   } catch (err) { console.error(err); res.status(500).json({ error: 'Failed to delete warehouse' }); }
-});
-
-// Delete location
-router.delete('/api/locations/:id', async (req, res) => {
-  try {
-    await pool.query('DELETE FROM locations WHERE id = $1', [req.params.id]);
-    res.json({ success: true });
-  } catch (err) { console.error(err); res.status(500).json({ error: 'Failed to delete location' }); }
 });
 
 module.exports = router;

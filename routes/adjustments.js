@@ -18,7 +18,14 @@ router.post('/api', async (req, res) => {
   const client = await pool.connect();
   try {
     const { product_id, physical_qty, reason } = req.body;
-    if (!product_id || physical_qty === undefined) return res.status(400).json({ error: 'Product and physical quantity required' });
+    if (!product_id || physical_qty === undefined || physical_qty === null || physical_qty === '') {
+      return res.status(400).json({ error: 'Product and physical quantity required' });
+    }
+    // Bug #11 fix: prevent negative physical stock counts
+    const parsedPhysical = parseFloat(physical_qty);
+    if (isNaN(parsedPhysical) || parsedPhysical < 0) {
+      return res.status(400).json({ error: 'Physical quantity must be a non-negative number' });
+    }
     await client.query('BEGIN');
     const product = await client.query('SELECT * FROM products WHERE id = $1', [product_id]);
     if (product.rows.length === 0) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Product not found' }); }

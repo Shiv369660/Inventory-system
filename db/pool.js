@@ -1,6 +1,7 @@
 const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
+const bcrypt = require('bcryptjs'); // Bug #25 fix: moved from inline require inside seedDatabase()
 
 const dbPath = path.join(__dirname, 'coreinventory.db');
 const db = new Database(dbPath);
@@ -39,7 +40,7 @@ const pool = {
     sqliteText = sqliteText.replace(/NULLIF\((\w+),\s*0\)/gi, 'CASE WHEN $1 = 0 THEN NULL ELSE $1 END');
     sqliteText = sqliteText.replace(/ROUND\((.+?),\s*(\d+)\)/gi, 'ROUND($1, $2)');
     sqliteText = sqliteText.replace(/DATE\((\w+)\)/gi, 'date($1)');
-    // ON CONFLICT (email) DO NOTHING
+    // Bug #13 fix: only strip column target for DO NOTHING (not DO UPDATE) to avoid breaking other conflict clauses
     sqliteText = sqliteText.replace(/ON CONFLICT \(\w+\) DO NOTHING/gi, 'ON CONFLICT DO NOTHING');
     const trimmed = sqliteText.trim();
     const hasReturning = /RETURNING\s+/i.test(trimmed);
@@ -197,14 +198,25 @@ function initializeDatabase() {
     );
   `);
 
-  // Create indexes
+  // Create indexes — all indexes here, no manual optimize script needed
   try {
     db.exec(`
       CREATE INDEX IF NOT EXISTS idx_products_sku ON products(sku);
       CREATE INDEX IF NOT EXISTS idx_products_category ON products(category);
+      CREATE INDEX IF NOT EXISTS idx_products_location ON products(location_id);
       CREATE INDEX IF NOT EXISTS idx_movements_product ON movements(product_id);
       CREATE INDEX IF NOT EXISTS idx_movements_date ON movements(created_at);
       CREATE INDEX IF NOT EXISTS idx_movements_type ON movements(operation_type);
+      CREATE INDEX IF NOT EXISTS idx_receipts_status ON receipts(status);
+      CREATE INDEX IF NOT EXISTS idx_receipts_created_by ON receipts(created_by);
+      CREATE INDEX IF NOT EXISTS idx_deliveries_status ON deliveries(status);
+      CREATE INDEX IF NOT EXISTS idx_deliveries_created_by ON deliveries(created_by);
+      CREATE INDEX IF NOT EXISTS idx_transfers_status ON transfers(status);
+      CREATE INDEX IF NOT EXISTS idx_receipt_lines_receipt ON receipt_lines(receipt_id);
+      CREATE INDEX IF NOT EXISTS idx_delivery_lines_delivery ON delivery_lines(delivery_id);
+      CREATE INDEX IF NOT EXISTS idx_transfer_lines_transfer ON transfer_lines(transfer_id);
+      CREATE INDEX IF NOT EXISTS idx_adjustments_product ON adjustments(product_id);
+      CREATE INDEX IF NOT EXISTS idx_locations_warehouse ON locations(warehouse_id);
     `);
   } catch (e) { /* indexes may already exist */ }
 
@@ -221,7 +233,7 @@ function initializeDatabase() {
 }
 
 function seedDatabase() {
-  const bcrypt = require('bcryptjs');
+  // Bug #25 fix: bcryptjs is now required at module top
   const hash = bcrypt.hashSync('admin123', 10);
 
   const insertUser = db.prepare('INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)');

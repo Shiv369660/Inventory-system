@@ -16,9 +16,18 @@ router.post('/api', async (req, res) => {
   try {
     const { name, email } = req.body;
     if (!name || !email) return res.status(400).json({ error: 'Name and email required' });
-    await pool.query('UPDATE users SET name = $1, email = $2 WHERE id = $3', [name, email, req.session.userId]);
-    req.session.user.name = name;
-    req.session.user.email = email;
+    // Bug #16 fix: validate email format
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: 'Invalid email format' });
+    }
+    // Bug #16 fix: check email uniqueness (excluding current user)
+    const existing = await pool.query('SELECT id FROM users WHERE email = $1 AND id != $2', [email.toLowerCase().trim(), req.session.userId]);
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ error: 'Email is already used by another account' });
+    }
+    await pool.query('UPDATE users SET name = $1, email = $2 WHERE id = $3', [name.trim(), email.toLowerCase().trim(), req.session.userId]);
+    req.session.user.name = name.trim();
+    req.session.user.email = email.toLowerCase().trim();
     res.json({ success: true });
   } catch (err) { console.error(err); res.status(500).json({ error: 'Failed to update profile' }); }
 });

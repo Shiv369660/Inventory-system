@@ -223,6 +223,10 @@
         </div>
       </div>
       <nav class="p-3 space-y-1 overflow-y-auto h-[calc(100%-160px)]">
+        <a href="/" class="nav-link">
+          <i data-lucide="home" class="w-5 h-5"></i><span>Home</span>
+        </a>
+        <div class="border-t border-white/10 my-2"></div>
         <a href="/dashboard" class="nav-link <%= currentPath === '/dashboard' ? 'active' : '' %>">
           <i data-lucide="layout-dashboard" class="w-5 h-5"></i><span>Dashboard</span>
         </a>
@@ -319,16 +323,22 @@
               const el = document.getElementById('live-clock');
               if (el) el.textContent = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
             }
-            updateClock(); setInterval(updateClock, 30000);
+            updateClock(); setInterval(updateClock, 1000); // fix: was 30000, now updates every second
 
-            // Toast notification
+            // Toast notification — uses CSS transitions (not keyframes) for interruptibility
             function showToast(message, type = 'success') {
               const colors = { success: 'bg-success', error: 'bg-danger', warning: 'bg-warning', info: 'bg-primary' };
               const toast = document.createElement('div');
               toast.className = `${colors[type] || colors.info} text-white px-5 py-3 rounded-xl shadow-lg text-sm font-medium animate-slideIn`;
               toast.textContent = message;
               document.getElementById('toast-container').appendChild(toast);
-              setTimeout(() => { toast.classList.add('animate-slideOut'); setTimeout(() => toast.remove(), 300); }, 3000);
+              // Asymmetric timing: 3s visible, 180ms exit (fast system response)
+              setTimeout(() => {
+                toast.classList.remove('animate-slideIn');
+                toast.classList.add('animate-slideOut');
+                // Remove after exit animation completes (180ms)
+                setTimeout(() => toast.remove(), 180);
+              }, 3000);
             }
 
             // Fetch wrapper

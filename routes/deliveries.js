@@ -28,7 +28,14 @@ router.get('/api/:id', async (req, res) => {
 router.post('/api', async (req, res) => {
   try {
     const { customer, notes, lines } = req.body;
-    if (!customer || !lines || lines.length === 0) return res.status(400).json({ error: 'Customer and at least one product line required' });
+    if (!customer || !lines || lines.length === 0)
+      return res.status(400).json({ error: 'Customer and at least one product line required' });
+    // Bug #17 fix: validate all line quantities are positive
+    for (const line of lines) {
+      if (!line.product_id || !line.quantity || parseFloat(line.quantity) <= 0) {
+        return res.status(400).json({ error: 'Each line must have a valid product and a positive quantity' });
+      }
+    }
     const ref = 'DEL-' + String(Date.now()).slice(-6);
     const result = await pool.query('INSERT INTO deliveries (reference, customer, status, created_by, notes) VALUES ($1,$2,$3,$4,$5) RETURNING *',
       [ref, customer, 'draft', req.session.userId, notes || null]);
