@@ -3,11 +3,19 @@ const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcryptjs'); // Bug #25 fix: moved from inline require inside seedDatabase()
 
-const dbPath = path.join(__dirname, 'coreinventory.db');
-const db = new Database(dbPath);
+const isNetlify = !!process.env.NETLIFY;
+const dbPath = isNetlify 
+  ? path.join(process.cwd(), 'db', 'coreinventory.db')
+  : path.join(__dirname, 'coreinventory.db');
+
+const db = new Database(dbPath, { readonly: isNetlify });
 
 // Enable WAL mode for better concurrency
-db.pragma('journal_mode = WAL');
+try {
+  db.pragma('journal_mode = WAL');
+} catch (e) {
+  // Ignored in read-only environments
+}
 db.pragma('foreign_keys = ON');
 
 // Wrapper to provide pg-like query interface
@@ -313,7 +321,9 @@ function seedDatabase() {
   console.log('Database seeded with demo data');
 }
 
-// Run initialization
-initializeDatabase();
+// Run initialization (skip in Netlify read-only environments)
+if (!isNetlify) {
+  initializeDatabase();
+}
 
 module.exports = pool;
