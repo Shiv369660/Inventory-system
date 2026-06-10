@@ -8,12 +8,6 @@ const dbPath = isServerless
   ? path.join(process.cwd(), 'db', 'coreinventory.db')
   : path.join(__dirname, 'coreinventory.db');
 
-console.log('DB DIAGNOSTIC - isServerless:', isServerless);
-console.log('DB DIAGNOSTIC - process.cwd():', process.cwd());
-console.log('DB DIAGNOSTIC - __dirname:', __dirname);
-console.log('DB DIAGNOSTIC - dbPath:', dbPath);
-console.log('DB DIAGNOSTIC - exists:', fs.existsSync(dbPath));
-
 const db = new Database(dbPath, { readonly: isServerless });
 
 // Enable WAL mode for better concurrency locally
