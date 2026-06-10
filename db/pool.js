@@ -16,11 +16,13 @@ console.log('DB DIAGNOSTIC - exists:', fs.existsSync(dbPath));
 
 const db = new Database(dbPath, { readonly: isServerless });
 
-// Enable WAL mode for better concurrency
-try {
-  db.pragma('journal_mode = WAL');
-} catch (e) {
-  // Ignored in read-only environments
+// Enable WAL mode for better concurrency locally
+if (!isServerless) {
+  try {
+    db.pragma('journal_mode = WAL');
+  } catch (e) {
+    // Ignored
+  }
 }
 db.pragma('foreign_keys = ON');
 
